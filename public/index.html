@@ -51,7 +51,6 @@
 
             startRecording.onclick = function () {
                 startRecording.disabled = true;
-
                 navigator.getUserMedia(
                     {
                         audio: true,
@@ -60,11 +59,21 @@
                         recordAudio = RecordRTC(stream, {
                             type: "audio",
                             mimeType: "audio/webm",
-                            sampleRate: 0,
+                            sampleRate: 44100,
                             desiredSampRate: 16000,
-                            recorderType: MediaStreamRecorder,
+                            recorderType: StereoAudioRecorder,
                             numberOfAudioChannels: 1,
+                            timeSlice: 4000,
+                            ondataavailable: function (blob) {
+                                var stream = ss.createStream();
+                                ss(socket).emit("stream-transcribe", stream, {
+                                    name: "stream.wav",
+                                    size: blob.size,
+                                });
+                                ss.createBlobReadStream(blob).pipe(stream);
+                            },
                         });
+
                         recordAudio.startRecording();
                         stopRecording.disabled = false;
                     },
@@ -77,19 +86,18 @@
             stopRecording.onclick = function () {
                 startRecording.disabled = false;
                 stopRecording.disabled = true;
-
-                recordAudio.stopRecording(function () {
-                    recordAudio.getDataURL(function (audioDataURL) {
-                        var files = {
-                            audio: {
-                                type: recordAudio.getBlob().type || "audio/wav",
-                                dataURL: audioDataURL,
-                            },
-                        };
-                        socketio.emit("message", files);
-                    });
-                });
+                recordAudio.stopRecording();
             };
+
+            socketio.on("results", function (data) {
+                console.log(data);
+                if (data.queryResult) {
+                    resultpreview.innerHTML +=
+                        "" + data.queryResult.fulfillmentText;
+                    intentInput.value = data.queryResult.intent.displayName;
+                    textInput.value = "" + data.queryResult.queryText;
+                }
+            });
         </script>
     </body>
 </html>

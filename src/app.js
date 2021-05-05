@@ -30,6 +30,12 @@ io.on("connect", (client) => {
         });
         client.emit("results", "HELLO");
     });
+
+    ss(client).on("stream-transcribe", function (stream, data) {
+        const filename = path.basename(data.name);
+        //todo getting stream and getting translation and send result
+        client.emit("results", "HELLO4");
+    });
 });
 
 http.listen(3000, () => {
